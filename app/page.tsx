@@ -1,65 +1,129 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useEffect, useState, useMemo } from "react";
+import Link from "next/link";
+import { parseISO } from "date-fns";
+import { SlidersHorizontal, Plus } from "lucide-react";
+import { db, type Entry } from "@/lib/db";
+import { EntryCard } from "@/components/entry-card";
+import { WaveGraph } from "@/components/wave-graph";
+import { TrackableGraph } from "@/components/trackable-graph";
+import { FilterSheet } from "@/components/filter-sheet";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
+export default function HomePage() {
+  const [entries, setEntries] = useState<Entry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filterTags, setFilterTags] = useState<string[]>([]);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [filterOpen, setFilterOpen] = useState(false);
+
+  useEffect(() => {
+    db.entries
+      .orderBy("date")
+      .reverse()
+      .toArray()
+      .then((rows) => {
+        setEntries(rows);
+        setLoading(false);
+      });
+  }, []);
+
+  const allTags = useMemo(() => {
+    const set = new Set<string>();
+    for (const e of entries) {
+      for (const t of e.tags) {
+        const [base, rest] = t.split(":");
+        // Collapse trackable tags (base:number) to just the base
+        set.add(rest !== undefined && !isNaN(parseFloat(rest)) ? base : t);
+      }
+    }
+    return Array.from(set).sort();
+  }, [entries]);
+
+  const filteredEntries = useMemo(() => {
+    return entries.filter((e) => {
+      const tagMatch =
+        filterTags.length === 0 ||
+        filterTags.some((ft) => e.tags.some((t) => t === ft || t.startsWith(ft + ":")));
+      const dateMatch = (!dateFrom || e.date >= dateFrom) && (!dateTo || e.date <= dateTo);
+      return tagMatch && dateMatch;
+    });
+  }, [entries, filterTags, dateFrom, dateTo]);
+
+  const isFiltered = filterTags.length > 0 || !!dateFrom || !!dateTo;
+  const filterCount = filterTags.length + (dateFrom || dateTo ? 1 : 0);
+  const rangeStart = dateFrom ? parseISO(dateFrom) : undefined;
+  const rangeEnd = dateTo ? parseISO(dateTo) : undefined;
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <div>
+      <WaveGraph entries={filteredEntries} rangeStart={rangeStart} rangeEnd={rangeEnd} />
+      <TrackableGraph
+        entries={filteredEntries}
+        filterTags={filterTags}
+        rangeStart={rangeStart}
+        rangeEnd={rangeEnd}
+      />
+
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold flex-1">Journal</h1>
+          <button
+            type="button"
+            onClick={() => setFilterOpen(true)}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm border transition-colors",
+              isFiltered
+                ? "bg-primary text-primary-foreground border-primary"
+                : "border-border text-muted-foreground hover:text-foreground"
+            )}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            <SlidersHorizontal className="h-3.5 w-3.5" />
+            {isFiltered ? `Filter (${filterCount})` : "Filter"}
+          </button>
+          <Link href="/entry/new" className={buttonVariants()}>
+            <Plus className="h-4 w-4" />
+            New
+          </Link>
         </div>
-      </main>
+
+        {loading ? (
+          <p className="text-muted-foreground text-sm">Loading…</p>
+        ) : filteredEntries.length === 0 ? (
+          <div className="text-center py-16 space-y-3">
+            {isFiltered ? (
+              <p className="text-muted-foreground">No entries match the selected tags.</p>
+            ) : (
+              <>
+                <p className="text-muted-foreground">No entries yet.</p>
+                <Link href="/entry/new" className={buttonVariants({ variant: "outline" })}>
+                  Write your first entry
+                </Link>
+              </>
+            )}
+          </div>
+        ) : (
+          <div>
+            {filteredEntries.map((entry) => (
+              <EntryCard key={entry.id} entry={entry} />
+            ))}
+          </div>
+        )}
+      </div>
+
+      <FilterSheet
+        open={filterOpen}
+        onClose={() => setFilterOpen(false)}
+        allTags={allTags}
+        filterTags={filterTags}
+        onFilterChange={setFilterTags}
+        dateFrom={dateFrom}
+        dateTo={dateTo}
+        onDateRangeChange={(from, to) => { setDateFrom(from); setDateTo(to); }}
+      />
     </div>
   );
 }
