@@ -1,8 +1,10 @@
+import path from "path";
 import type { NextConfig } from "next";
 import withPWA from "@ducanh2912/next-pwa";
 
 const nextConfig: NextConfig = {
   turbopack: {},
+  outputFileTracingRoot: path.join(__dirname),
 };
 
 export default withPWA({
