@@ -3,6 +3,6 @@ services:
     name: tag-diary
     runtime: node
     plan: free
-    buildCommand: npm run build
+    buildCommand: npm ci && npm run build
     startCommand: npm run start
     healthCheckPath: /
