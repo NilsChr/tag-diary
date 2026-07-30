@@ -107,6 +107,46 @@ export async function renameTag(oldTag: string, newTag: string): Promise<void> {
   }
 }
 
+export interface ExportPayload {
+  version: 1;
+  exportedAt: string;
+  entries: Entry[];
+  tagConfigs: TagConfig[];
+}
+
+export async function exportAllData(): Promise<ExportPayload> {
+  const [entries, tagConfigs] = await Promise.all([
+    db.entries.toArray(),
+    db.tagConfigs.toArray(),
+  ]);
+  return { version: 1, exportedAt: new Date().toISOString(), entries, tagConfigs };
+}
+
+export async function importAllData(payload: {
+  entries?: unknown;
+  tagConfigs?: unknown;
+}): Promise<void> {
+  const entries = Array.isArray(payload.entries) ? (payload.entries as Entry[]) : [];
+  const tagConfigs = Array.isArray(payload.tagConfigs) ? (payload.tagConfigs as TagConfig[]) : [];
+
+  for (const e of entries) {
+    const clean = { ...e };
+    delete clean.id;
+    await db.entries.add(clean);
+  }
+
+  for (const c of tagConfigs) {
+    const existing = await db.tagConfigs.where("name").equals(c.name).first();
+    if (existing) {
+      await db.tagConfigs.update(existing.id!, { color: c.color });
+    } else {
+      const clean = { ...c };
+      delete clean.id;
+      await db.tagConfigs.add(clean);
+    }
+  }
+}
+
 export async function getTagStats(tag: string) {
   const entries = await getEntriesForTag(tag);
 

@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Download, Monitor, Moon, Sun, Trash2 } from "lucide-react";
-import { db } from "@/lib/db";
+import { format } from "date-fns";
+import { Check, Download, Monitor, Moon, Sun, Trash2, Upload } from "lucide-react";
+import { db, exportAllData, importAllData } from "@/lib/db";
+import { invalidateTagColorCache } from "@/lib/tag-colors";
 import { getStoredTheme, setTheme, type Theme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -26,6 +28,9 @@ export default function SettingsPage() {
   const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null);
   const [isStandalone, setIsStandalone] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importSuccess, setImportSuccess] = useState(false);
 
   useEffect(() => {
     setIsStandalone(
@@ -57,6 +62,36 @@ export default function SettingsPage() {
     await Promise.all([db.entries.clear(), db.tagConfigs.clear()]);
     setConfirmingClear(false);
     router.push("/");
+  };
+
+  const exportData = async () => {
+    const payload = await exportAllData();
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `tag-diary-export-${format(new Date(), "yyyy-MM-dd")}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setImportError(null);
+    setImportSuccess(false);
+    try {
+      const data = JSON.parse(await file.text());
+      if (!Array.isArray(data.entries) || !Array.isArray(data.tagConfigs)) {
+        throw new Error("Invalid file format");
+      }
+      await importAllData(data);
+      invalidateTagColorCache();
+      setImportSuccess(true);
+    } catch {
+      setImportError("Couldn't import this file. Make sure it's a Tag Diary export.");
+    }
   };
 
   return (
@@ -105,6 +140,32 @@ export default function SettingsPage() {
           )}
         </div>
       )}
+
+      <div className="space-y-2">
+        <h2 className="font-semibold">Backup</h2>
+        <p className="text-sm text-muted-foreground">
+          Entries only exist on this device. Export a backup regularly, or before switching devices.
+        </p>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={exportData}>
+            <Download className="h-4 w-4" />
+            Export data
+          </Button>
+          <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+            <Upload className="h-4 w-4" />
+            Import data
+          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="application/json"
+            onChange={handleImportFile}
+            className="hidden"
+          />
+        </div>
+        {importError && <p className="text-sm text-destructive">{importError}</p>}
+        {importSuccess && <p className="text-sm text-green-600">Import complete.</p>}
+      </div>
 
       <div className="space-y-2">
         <h2 className="font-semibold text-destructive">Danger zone</h2>

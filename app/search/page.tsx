@@ -6,6 +6,7 @@ import { db, getEntriesForTag, getTagStats, type Entry } from "@/lib/db";
 import { EntryCard } from "@/components/entry-card";
 import { TagBadge } from "@/components/tag-badge";
 import { RatingDisplay } from "@/components/rating-display";
+import { ActivityHeatmap } from "@/components/activity-heatmap";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Search } from "lucide-react";
@@ -27,12 +28,16 @@ export default function SearchPage() {
   const [query, setQuery] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [allTags, setAllTags] = useState<string[]>([]);
+  const [allEntries, setAllEntries] = useState<Entry[]>([]);
   const [results, setResults] = useState<Entry[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [searched, setSearched] = useState(false);
 
   useEffect(() => {
-    db.entries.toArray().then((entries) => setAllTags(getAllTags(entries)));
+    db.entries.toArray().then((entries) => {
+      setAllTags(getAllTags(entries));
+      setAllEntries(entries);
+    });
   }, []);
 
   const search = useCallback(async (tag: string) => {
@@ -92,6 +97,15 @@ export default function SearchPage() {
           </div>
         )}
       </div>
+
+      {(searched ? results.length > 0 : allEntries.length > 0) && (
+        <div className="space-y-2">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+            {searched ? `Activity for ${query}` : "Activity"}
+          </h2>
+          <ActivityHeatmap entries={searched ? results : allEntries} />
+        </div>
+      )}
 
       {stats && searched && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">

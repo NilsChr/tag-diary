@@ -19,33 +19,31 @@ export function EntryCard({ entry }: EntryCardProps) {
   return (
     <Link
       href={`/entry?id=${entry.id}`}
-      className="flex items-baseline justify-between gap-3 py-2.5 border-b border-border/50 hover:bg-muted/40 -mx-2 px-2 rounded transition-colors"
+      className="flex items-baseline gap-2 py-2.5 border-b border-border/50 hover:bg-muted/40 -mx-2 px-2 rounded transition-colors"
     >
-      <div className="flex items-baseline gap-2 min-w-0">
-        <span className="text-xs text-muted-foreground shrink-0 w-20">
-          {format(parseISO(entry.date), "d MMM yyyy")}
-        </span>
-        {entry.text ? (
-          <span className="text-sm truncate">{entry.text}</span>
-        ) : entry.tags.length > 0 ? null : (
-          <span className="text-sm text-muted-foreground italic">No text</span>
-        )}
-        {visibleTags.length > 0 && (
-          <span className="flex gap-1 min-w-0 overflow-hidden">
-            {visibleTags.map((tag) => (
-              <TagBadge key={tag} tag={tag} className="shrink-0" />
-            ))}
-            {hiddenCount > 0 && (
-              <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-muted text-muted-foreground">
-                …
-              </span>
-            )}
-          </span>
-        )}
-      </div>
-      <span className="shrink-0">
-        <RatingDisplay rating={entry.rating} size="sm" />
+      <span className="text-xs text-muted-foreground shrink-0">
+        {format(parseISO(entry.date), "dd.MM.yyyy")}
       </span>
+      <span className="shrink-0">
+        <RatingDisplay rating={entry.rating} size="sm" showMax={false} />
+      </span>
+      {entry.text ? (
+        <span className="text-sm truncate min-w-0">{entry.text}</span>
+      ) : entry.tags.length > 0 ? null : (
+        <span className="text-sm text-muted-foreground italic">No text</span>
+      )}
+      {visibleTags.length > 0 && (
+        <span className="flex gap-1 min-w-0 overflow-hidden">
+          {visibleTags.map((tag) => (
+            <TagBadge key={tag} tag={tag} className="shrink-0" />
+          ))}
+          {hiddenCount > 0 && (
+            <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-muted text-muted-foreground">
+              …
+            </span>
+          )}
+        </span>
+      )}
     </Link>
   );
 }
