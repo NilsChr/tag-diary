@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { db, getBaseTag, renameTag, type TagConfig } from "@/lib/db";
+import { invalidateTagColorCache } from "@/lib/tag-colors";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,6 +26,7 @@ export default function TagsPage() {
   const [renameValue, setRenameValue] = useState("");
 
   const load = useCallback(async () => {
+    invalidateTagColorCache();
     const [configs, entries] = await Promise.all([
       db.tagConfigs.toArray(),
       db.entries.toArray(),

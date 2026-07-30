@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { getBaseTag, db } from "@/lib/db";
+import { getBaseTag } from "@/lib/db";
+import { useTagColors } from "@/lib/tag-colors";
 import { cn } from "@/lib/utils";
 
 interface TagBadgeProps {
@@ -13,16 +13,8 @@ interface TagBadgeProps {
 }
 
 export function TagBadge({ tag, onClick, children, className, selected }: TagBadgeProps) {
-  const [color, setColor] = useState<string | undefined>();
-
-  useEffect(() => {
-    const base = getBaseTag(tag);
-    db.tagConfigs
-      .where("name")
-      .equals(base)
-      .first()
-      .then((c) => setColor(c?.color));
-  }, [tag]);
+  const colors = useTagColors();
+  const color = colors?.get(getBaseTag(tag));
 
   return (
     <span

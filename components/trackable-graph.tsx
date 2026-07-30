@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useEffect, useState } from "react";
+import { useMemo } from "react";
 import { format, parseISO, eachDayOfInterval, subDays } from "date-fns";
-import { type Entry, getBaseTag, db } from "@/lib/db";
+import { type Entry, getBaseTag } from "@/lib/db";
+import { useTagColors } from "@/lib/tag-colors";
 
 function buildSmoothPath(points: [number, number][]): string {
   if (points.length === 0) return "";
@@ -98,17 +99,10 @@ function buildTrackables(
 }
 
 function SingleTrackableGraph({ data }: { data: TrackableData }) {
-  const [color, setColor] = useState<string | undefined>();
+  const colors = useTagColors();
+  const color = colors?.get(data.base);
   const W = 800;
   const H = 60;
-
-  useEffect(() => {
-    db.tagConfigs
-      .where("name")
-      .equals(data.base)
-      .first()
-      .then((c) => setColor(c?.color));
-  }, [data.base]);
 
   const stroke = color ?? "currentColor";
 
