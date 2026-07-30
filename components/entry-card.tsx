@@ -18,7 +18,7 @@ export function EntryCard({ entry }: EntryCardProps) {
 
   return (
     <Link
-      href={`/entry/${entry.id}`}
+      href={`/entry?id=${entry.id}`}
       className="flex items-baseline justify-between gap-3 py-2.5 border-b border-border/50 hover:bg-muted/40 -mx-2 px-2 rounded transition-colors"
     >
       <div className="flex items-baseline gap-2 min-w-0">

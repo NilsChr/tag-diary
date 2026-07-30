@@ -1,8 +1,6 @@
 services:
   - type: web
     name: tag-diary
-    runtime: node
-    plan: free
+    runtime: static
     buildCommand: npm ci && npm run build
-    startCommand: npm run start
-    healthCheckPath: /
+    staticPublishPath: ./out

@@ -3,6 +3,7 @@ import type { NextConfig } from "next";
 import withPWA from "@ducanh2912/next-pwa";
 
 const nextConfig: NextConfig = {
+  output: "export",
   turbopack: {},
   outputFileTracingRoot: path.join(__dirname),
 };
